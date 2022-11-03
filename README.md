@@ -63,7 +63,7 @@ There are several implementations of X-Forth created along with the project in v
 * [phillvancejr / go-x-forth TODO]()
     * [ ] X-B (Basic)
 ### Python
-* [phillvancejr / py-x-forth TODO](implementations/python/tutorial/src)
+* [phillvancejr / py-x-forth](implementations/python/tutorial/src)
     * [ ] X-B (Basic)
 ### Third Party
 If you create an X-Forth please let me know, I'd love to link to it! Any language is great!
