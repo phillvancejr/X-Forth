@@ -15,7 +15,7 @@ I believe concatenative stack based langauges are the most simple languages to w
 It is very fast to write a Forth and it can even easily bootstrap itself from assembly as seen in [Jones Forth](https://github.com/nornagon/jonesforth/blob/master/jonesforth.S)
 
 ## Tutorial
-There are ongoing (WIP) tutorials that accompany the Python implementation [here]().
+There are ongoing (WIP) tutorials that accompany the Python implementation [here](implementations/python/tutorial).
 
 ## Current Extension Specs
 
@@ -63,7 +63,7 @@ There are several implementations of X-Forth created along with the project in v
 * [phillvancejr / go-x-forth TODO]()
     * [ ] X-B (Basic)
 ### Python
-* [phillvancejr / py-x-forth TODO]()
+* [phillvancejr / py-x-forth TODO](implementations/python/tutorial/src)
     * [ ] X-B (Basic)
 ### Third Party
 If you create an X-Forth please let me know, I'd love to link to it! Any language is great!
