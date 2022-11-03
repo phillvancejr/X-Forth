@@ -60,7 +60,7 @@ There are several implementations of X-Forth created along with the project in v
 * [phillvancejr / dart-x-forth](implementations/dart)
     * [X] X-B (Basic)
 ### Go
-* [phillvancejr / go-x-forth TODO]()
+* phillvancejr / go-x-forth TODO
     * [ ] X-B (Basic)
 ### Python
 * [phillvancejr / py-x-forth](implementations/python/tutorial/src)
