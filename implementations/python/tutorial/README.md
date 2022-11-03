@@ -3,5 +3,5 @@ Follow along with the development of a Python implementation of X-Forth. Each le
 
 ## Index Guide
 ### X-B (basic)
-* 1  - A simple tokenizer with hardcoded Forth source
-* 2 - A simple interpreter that can push numbers to the stack and display the stack contents
+* [1](src/1.x-forth.py)  - A simple tokenizer with hardcoded Forth source
+* [2](src/2.x-forth.py) - A simple interpreter that can push numbers to the stack and display the stack contents
