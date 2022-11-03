@@ -74,3 +74,6 @@ There are several implementations of X-Forth created along with the project in v
     * [ ] X-B (Basic)
 ### Third Party
 If you create an X-Forth please let me know, I'd love to link to it! Any language is great!
+
+## For Fun
+This project was created to allow me to play with and compare different languages and to explore different aspects of programming languages and compilers like: interpreters, compiling to native code, assembly, virtual machines and more. Even if you're not interested in Forth, you might be interested in the ways similar things are implemented in the different languages used here. 
