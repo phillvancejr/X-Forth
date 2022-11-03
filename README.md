@@ -32,9 +32,12 @@ The most basic version of X-Forth. It contains only a few operators and function
 - dup - duplicate the top value on the stack
 - show - print the value on the top of the stack without consuming it
 #### errors
+- Unknown token - present this error when we find an invalid token in the source code
+    - format `Unknown token <token>`
 - Stack underflow - present this error when there aren't enough values on the stack for a word
     - math and logic operators require 2 arguments
     - . (dot) and dup require 1 argument
+    - format `<word name>: Stack underflow`
 #### quirks
 - what happened!? - X-B contains virtually no error handling at the compiler level with the exception of throwing an error when encountering an unknown token. There are no stack traces, line numbers in errors or other helpful bits of error context.
 - hardcoded source - X-B's source code is hardcoded in the program, see [X-1](#-x-1) (External Source Code) to get variable source code
@@ -46,7 +49,7 @@ X-Forth files use the `.forth` extension
 
 #### errors
 - Source file not found - The passed file path could not be found
-    - format: \<source path>: Source File Not Found
+    - format: `<source path>: Source File Not Found`
 
 ### X-2 (REPL)
 Add a Read Eval Print Loop.
