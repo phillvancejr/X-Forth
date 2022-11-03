@@ -1,0 +1,1 @@
+2 3 + show drop 10 dup .s + .'
