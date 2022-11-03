@@ -1,1 +1,1 @@
-2 3 + show drop 10 dup .s + .'
+2 3 + show drop 10 dup .s + .
