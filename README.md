@@ -40,7 +40,7 @@ The most basic version of X-Forth. It contains only a few operators and function
     - format `<word name>: Stack underflow`
 #### quirks
 - what happened!? - X-B contains virtually no error handling at the compiler level with the exception of throwing an error when encountering an unknown token. There are no stack traces, line numbers in errors or other helpful bits of error context.
-- hardcoded source - X-B's source code is hardcoded in the program, see [X-1](#-x-1) (External Source Code) to get variable source code
+- hardcoded source - X-B's source code is hardcoded in the program, see [X-1](#-x-1-(external/variable-source-code)) (External Source Code) to get variable source code
 
 ### X-1 (External/Variable Source Code)
 Acquire the source code from an external file. Receive an external file path on the command line, validate its existence and read its contents into the src variable. 
