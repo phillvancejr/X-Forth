@@ -1,6 +1,15 @@
 # X-Forth
-X-Forth is a small forth specification meant to be used in compiler projects. You can likely implement the basic X-forth in less than an hour.
+X-Forth is a small Forth specification meant to be used in compiler projects. You can likely implement the basic X-forth in a couple hours or less.
+```py
+2 3 + .s
+# <2> 2.0 3.0 ok
+```
 
+## Tutorial
+There are ongoing (WIP) tutorials that accompany the Python implementation [here](implementations/python/tutorial).
+
+
+## The Name
 X-Forth is so named because the X refers to a few aspects and goals of the project:
 - X-Forth - where X == implementation language, ex. Go-Forth, Dart-Forth, JS-Forth etc.
 - X for eXample - X-Forth is meant to be used as an example project to play with. The various extensions of X-Forth provide smaller sub projects to help you explore your language of choice as well as broader compiler/language features.
@@ -14,8 +23,6 @@ I believe concatenative stack based langauges are the most simple languages to w
 
 It is very fast to write a Forth and it can even easily bootstrap itself from assembly as seen in [Jones Forth](https://github.com/nornagon/jonesforth/blob/master/jonesforth.S)
 
-## Tutorial
-There are ongoing (WIP) tutorials that accompany the Python implementation [here](implementations/python/tutorial).
 
 ## Current Extension Specs
 
