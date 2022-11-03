@@ -62,8 +62,5 @@ There are several implementations of X-Forth created along with the project in v
 ### Python
 * [phillvancejr / py-x-forth TODO]()
     * [] X-B (Basic)
-### Zig
-* [phillvancejr / zig-x-forth TODO]()
-    * [] X-B (Basic)
 ### Third Party
 If you create an X-Forth please let me know, I'd love to link to it! Any language is great!
