@@ -57,7 +57,7 @@ There are several implementations of X-Forth created along with the project in v
 * [phillvancejr / cpp-x-forth (std 20) TODO]()
     * [] X-B (Basic)
 ### Dart
-* [phillvancejr / dart-x-forth]()
+* [phillvancejr / dart-x-forth](implementations/dart)
     * [X] X-B (Basic)
 ### Go
 * [phillvancejr / go-x-forth TODO]()
