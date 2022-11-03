@@ -53,23 +53,14 @@ Add a Read Eval Print Loop.
 
 ## Implementations
 There are several implementations of X-Forth created along with the project in varying stages of completion and extension implementation. All implementations listed implement at least X-B: 
-### C++
-* [phillvancejr / cpp-x-forth (std 20) TODO]()
-    * [] X-B (Basic)
 ### Dart
 * [phillvancejr / dart-x-forth](implementations/dart)
     * [X] X-B (Basic)
 ### Go
 * [phillvancejr / go-x-forth TODO]()
     * [] X-B (Basic)
-### JavaScript
-* [phillvancejr / js-x-forth TODO]()
-    * [] X-B (Basic)
 ### Python
 * [phillvancejr / py-x-forth TODO]()
-    * [] X-B (Basic)
-### x64-Assembly
-* [phillvancejr / asm-x-forth TODO]()
     * [] X-B (Basic)
 ### Zig
 * [phillvancejr / zig-x-forth TODO]()
