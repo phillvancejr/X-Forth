@@ -297,7 +297,5 @@ if __name__ == '__main__':
     print(f'\n** INTERPRET **')
     try:
         interpret(tokens)
-        # You can remove this line now!
-        # stack_display()
     except Exception as e:
         print(e)
