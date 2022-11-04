@@ -56,7 +56,7 @@ class Value {
     Value({this.type=ValueType.unknown,this.value=null});
 }
 
-error_stack_underflow(word)=> throw '${word}: Stack underflow';
+error_stack_underflow(word)=> throw 'ERROR: ${word}: Stack underflow';
 
 stack_print_top({consume=true}) {
   if(stack_top < 0) error_stack_underflow('.');
@@ -134,7 +134,7 @@ interpret(tokens){
           // function
         // unknown
         } else {
-            throw "Unknown Token ${token}";
+            throw "ERROR: Unknown Token ${token}";
         } 
     });
 }
