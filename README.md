@@ -56,7 +56,7 @@ X-Forth files use the `.forth` extension
 
 #### errors
 - Source file not found - The passed file path could not be found
-    - format: `ERROR: <source path>: Source File Not Found`
+    - format: `<source path>: ERROR: Source File Not Found`
 
 ### X-2 (REPL)
 Add a Read Eval Print Loop.

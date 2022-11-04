@@ -14,12 +14,16 @@ if len(args := sys.argv[1:]) > 0:
         if os.path.isfile(filename):
             with open(filename, 'r') as f:
                 src = f.read()
+            # now we'll add a location so we can know what file an error is coming from
+            location = f'{filename}: '
         else:
             # source file not found error
             print(f'ERROR: {filename}: Source File Not Found')
             # exit with error
             sys.exit(1)
 else:
+    # if we're using internal source use an empty location
+    location = ''
     # Forth source code
     src = '2 3 + .' # 5.0
     # uncomment these other sources to try out more complex programs
@@ -138,7 +142,7 @@ def tokenize(src: str) -> List[str]:
 
 def error_stack_underflow(word: str):
     '''Stack underflow happens when there aren't enough arguments for a word'''
-    raise Exception(f'ERROR: {word} : Stack underflow')
+    raise Exception(f'{location}ERROR: {word} : Stack underflow')
 
 # we'll use this to display what is currently on the stack
 def stack_display():
@@ -288,7 +292,7 @@ def interpret(tokens: List[str]):
                 # lookup and call the function from FUNC_TABLE
                 FUNC_TABLE[token]()
         else:
-            raise Exception(f'ERROR: Unknown token {token}')
+            raise Exception(f'{location}ERROR: Unknown token {token}')
 
 if __name__ == '__main__':
     tokens = tokenize(src)
