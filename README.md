@@ -72,6 +72,7 @@ There are several implementations of X-Forth created along with the project in v
 ### Python
 * [phillvancejr / x-forth-py](implementations/python/tutorial)
     * [X] X-B (Basic)
+    * [X] X-1 (External/Variable Source Code)
 ### Third Party
 If you create an X-Forth please let me know, I'd love to link to it! Any language is great!
 

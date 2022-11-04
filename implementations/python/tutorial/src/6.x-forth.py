@@ -1,33 +1,47 @@
 '''
-Welcome to part 5, this is the last part of implementing the X-B (Basic) interpreter! We'll introduce 5 new words to manipulate and display the stack:
-. - dot word prints and consumes the value on the top of the stack
-.s - prints the current state of the stack.
-drop - remove the top value from the stack
-dup - duplicate the top value and push it to the stack
-show - similar to . (dot), it prints the value on the top of the stack, but it does not consume it
+Part 6 will be short, we'll add the ability to get our source code from an external file:
+
+python3 6.x-forth.py ../../../../forth_samples/x-b/3.forth 
 '''
-# Forth source code
-src = '2 3 + .' # 5.0
-# uncomment these other sources to try out more complex programs
-# src = '1 2 + show dup + show 2 * .s 15 > . 10 10 .s drop .s'
-# output
-# 3.0
-# 6.0
-# <1> 12.0 ok
-# 0.0
-# <2> 10.0 10.0 ok
-# <1> 10.0 ok
-#src = '''
-#    1 2 > 0 == .
-#    15 dup + .
-#    1 2 3 4 5 .s
-#    drop drop drop .s
-#'''
-# output
-# 1.0
-# 30.0
-# <5> 1.0 2.0 3.0 4.0 5.0 ok
-# <2> 1.0 2.0 ok
+import sys
+import os.path
+
+# if an argument was passed to the file
+if len(args := sys.argv[1:]) > 0:
+    # get the argument
+    filename = args[0]
+    if filename.endswith('.forth'):
+        if os.path.isfile(filename):
+            with open(filename, 'r') as f:
+                src = f.read()
+        else:
+            # source file not found error
+            print(f'ERROR: {filename}: Source File Not Found')
+            # exit with error
+            sys.exit(1)
+else:
+    # Forth source code
+    src = '2 3 + .' # 5.0
+    # uncomment these other sources to try out more complex programs
+    # src = '1 2 + show dup + show 2 * .s 15 > . 10 10 .s drop .s'
+    # output
+    # 3.0
+    # 6.0
+    # <1> 12.0 ok
+    # 0.0
+    # <2> 10.0 10.0 ok
+    # <1> 10.0 ok
+    #src = '''
+    #    1 2 > 0 == .
+    #    15 dup + .
+    #    1 2 3 4 5 .s
+    #    drop drop drop .s
+    #'''
+    # output
+    # 1.0
+    # 30.0
+    # <5> 1.0 2.0 3.0 4.0 5.0 ok
+    # <2> 1.0 2.0 ok
 
 # the ValueType object represents the datatype of a Forth value, for now we'll only have two:
 # unknown and numbers

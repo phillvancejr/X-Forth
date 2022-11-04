@@ -11,3 +11,5 @@ The file x-forth.py represents the latest tutorial completed and thus the most f
 * [3](src/3.x-forth.py) - Adding math operators to the interpreter
 * [4](src/4.x-forth.py) - Adding logic operators to the interpreter
 * [5](src/5.x-forth.py) - Finish X-B by Adding some basic stack manipulation and display words
+### X-1 (External/Variable Source Code)
+* [6](src/6.x-forth.py) - X-1 allows us to read source code from external files
