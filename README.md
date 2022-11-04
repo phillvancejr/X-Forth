@@ -56,11 +56,52 @@ X-Forth files use the `.forth` extension
 
 #### errors
 - Source file not found - The passed file path could not be found
-    - format: `<source path>: ERROR: Source File Not Found`
+    - format: `ERROR: <source path>: Source File Not Found`
 
 ### X-2 (REPL)
-Add a Read Eval Print Loop.
+Add a Read Eval Print Loop. TODO
 
+### X-3 (Custom Words)
+#### X-3.A (Constant Custom Word)
+X-3.A implements custom words that cannot be overriden. Attempting to redefine a word that already exists will result in a `Word redefinition` error 
+
+#### errors
+- Word Refinition - you attempted to redefine an existing word
+    - format: `ERROR: <word name> : Word Redefinition`
+#### X-3.B (Redefinable Custom Words)
+X-3.B implements custom words that can be redefined. Defining a word that already exists will overwrite its entry in the global lookup table.
+### X-4 (Bool support)
+Support for boolean types. This is mostly cosmetic as they should be treated as numbers under the hood. The words `true` and `false` should be aliases for `greater than 0` and `0` respectively, effectively making them constants. Though they are mostly aliases, it can be helpful to give them a dedicated boolean type even though they are stored numerically so you can differentiate them from numbers for printing.
+
+<!-- 0 should be true and anything else false? This would integrate well with errors. Errors could similarly be aliases where 0 represents no error and positive numbers represent specific errors like an enum. This would allow things like:
+
+: work 1 ; # something went wrong
+
+work if drop "it worked!" . else "something went wrong, error # " swap to-string concat .;
+
+Maybe I'm over thinking it. But errors should definitely be enums. I think this makes sense actually, 0 is true and anything else is error, that way the first value of an enum/error set is always no error
+-->
+### X-5 (String support)
+X-5 brings string support. Specifics about the string implementation like: immutability vs mutability, pascal style (length prefixed) vs c style (null terminated) are left to the implementation to decide.
+#### required words
+* length ( string -- string number )- gives count of characters in the string.
+* append ( string string -- string ) - appends one string to another
+* to-string ( number -- string ) - converts a number into a string
+    * should be implemented for each primtive datatype you included in your Forth. So if you've implemented X-5 (Bool), you should also provide a bool conversion that returns `"true"` or `"false"`
+### X-6 (Includes) requires X-5 (String support)
+X-6 brings include support which allows including external Forth files. It works similarly to C's `include` and inserts the source code of another file at the location. `include` operates on a string path:
+```nim
+"./files/some_file.forth" include
+```
+`include` can be implemented to work at parse/compile time or during interpretation/runtime, this is implementation specific.
+#### required words
+* include (string -- ?) - extends the token stream with tokens from the passed file
+    * note that we have ? as the return value because the state of the stack depends on the file included. If that file pushed a value as the last statement then that would apply to the current program
+#### X-6.A (Pre Interpretation Include) 
+X-6.A implements `include` before the interpretation phase. During the tokenizing step when adding a word to the token list, if the token is `include` then remove the previous token from the token list, verify that it starts with `"` (double quote) and ends with `.forth"`, and if so, verify the files existence, read the file into a string and then call the tokenize function recursively to aquire the tokens from that source code, then extend/spread these tokens into the current token list.
+#### X-6.B (Mid Interpretation Include)
+X-6.B implements `include` mid interpretation. This allows for dynamic loading of libraries and code which can change based on input during runtime. To implement `include` during interpretation you could modify the token stream, and its length. When encountering `include`, pop the last string from the stack, varify it is a valid path to a `.forth` file, read its source, tokenize it, then extend the token stream with these tokens and if needed modify the loop to account for the new length, then continue interpretation on the new tokens at the included site. 
+    * Immplementation
 ## Implementations
 There are several implementations of X-Forth created along with the project in varying stages of completion and extension implementation. All implementations listed implement at least X-B: 
 ### Dart
