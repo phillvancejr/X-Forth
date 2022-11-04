@@ -1,3 +1,7 @@
+<!--reference
+ Easy Forth: https://skilldrick.github.io/easyforth/#conditionals-and-loops
+ Forth in y minutes: https://learnxinyminutes.com/docs/forth/
+-->
 # X-Forth
 X-Forth is a small Forth specification meant to be used in compiler projects. You can likely implement the basic X-forth in a couple hours or less.
 ```py
