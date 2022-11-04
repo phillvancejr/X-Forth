@@ -1,8 +1,11 @@
 '''
-In part 2 we'll introduce the stack and begin the interpreter. Yes, we're already starting the interpreter. Unlike most languages, Forth source code does not need to be parsed into an Abstract Syntax Tree (AST) and can instead be directly executed.
+Part 4 is a short lesson in which we will add some basic logic operators: <, >, ==, !=. By the end of this lesson you'll be able to compare numbers. Note that since we don't have a boolean type, we will stick with numbers and true expressions will result in 1.0 while false expressions will give us 0.0. Boolean types can be added in another extension/lesson.
 '''
 # Forth source code
-src = '2 3'
+src = '2 3 <' # <1> 1.0 ok
+# uncomment these other sources to try out more comparisons
+# src = '1 2 ==' # <1> 0.0 ok
+# src = '1 10 != 1 ==' # <1> 1.0 ok
 
 # the ValueType object represents the datatype of a Forth value, for now we'll only have two:
 # unknown and numbers
@@ -21,6 +24,20 @@ from typing import Any
 class Value:
     type: ValueType = ValueType.Unknown
     value: Any = None
+
+# operators
+OPERATORS = [
+    # math
+    '+',
+    '-',
+    '*',
+    '/',
+    # logic
+    '<',
+    '>',
+    '==',
+    '!=',
+]
 
 # the size of the stack
 STACK_CAPACITY = 1024
@@ -57,6 +74,9 @@ def tokenize(src):
             if index >= len(src)-1:
                 tokens.append(token)
     return tokens
+
+def error_stack_underflow(word):
+    raise Exception(f'ERROR: {word} : Stack underflow')
 
 # we'll use this to display what is currently on the stack
 def stack_display():
@@ -95,8 +115,63 @@ def interpret(tokens):
             stack[stack_top].type = ValueType.Number
             # assign the value
             stack[stack_top].value = number
+        # operators
+        elif token in OPERATORS:
+            
+            # all current operators require 2 arguments so we can check if the stack top is < 1
+            # if stack top is >= 1 there are 2 or more arguments on the stack
+            if stack_top < 1:
+                error_stack_underflow(token)
+            # get arguments, note that the second argument is on the top of the stack and the first is under it:
+            # push 2
+            # push 3
+            # [ 2 3 ]
+            # b = 3
+            # a = 2
+            b = stack[stack_top]
+            # decrement the stack_top to pop the value
+            stack_top -= 1
+            # decrement the stack_top to pop the value
+            a = stack[stack_top]
+            stack_top -= 1
+
+            result = None
+
+            # perform the correct operation based on the operator
+            # math operators
+            if token == '+':
+                result = a.value + b.value
+            elif token == '-':
+                result = a.value - b.value
+            elif token == '*':
+                result = a.value * b.value
+            elif token == '/':
+                # for now if we try to divide by zero we'll just get zero
+                if b.value == 0:
+                    result = 0.0
+                else:
+                    result = a.value / b.value
+            # boolean operators
+            # note that we want to convert the bool value to a float 1.0 or 0.0
+            elif token == '<':
+                result = 1.0 if a.value < b.value else 0.0
+            elif token == '>':
+                result = 1.0 if a.value > b.value else 0.0
+            elif token == '==':
+                result = 1.0 if a.value == b.value else 0.0
+            elif token == '!=':
+                result = 1.0 if a.value != b.value else 0.0
+
+           # push the value back onto the stack 
+           # first increment stack_top
+            stack_top += 1
+            # assign the result to the value
+            stack[stack_top].value = result
+            # assign the number type
+            # for now the values are always numbers, but this will become important when we add more datatypes later on
+            stack[stack_top].type = ValueType.Number
         else:
-            raise Exception(f'Unknown token {token}')
+            raise Exception(f'ERROR: Unknown token {token}')
 
 if __name__ == '__main__':
     tokens = tokenize(src)

@@ -40,11 +40,11 @@ The most basic version of X-Forth. It contains only a few operators and function
 - show - print the value on the top of the stack without consuming it
 #### errors
 - Unknown token - present this error when we find an invalid token in the source code
-    - format `Unknown token <token>`
+    - format `ERROR: Unknown token <token>`
 - Stack underflow - present this error when there aren't enough values on the stack for a word
     - math and logic operators require 2 arguments
     - . (dot) and dup require 1 argument
-    - format `<word name>: Stack underflow`
+    - format `ERROR: <word name>: Stack underflow`
 #### quirks
 - what happened!? - X-B contains virtually no error handling at the compiler level with the exception of throwing an error when encountering an unknown token. There are no stack traces, line numbers in errors or other helpful bits of error context.
 - hardcoded source - X-B's source code is hardcoded in the program, see [X-1](#-x-1-(external/variable-source-code)) (External Source Code) to get variable source code
@@ -56,7 +56,7 @@ X-Forth files use the `.forth` extension
 
 #### errors
 - Source file not found - The passed file path could not be found
-    - format: `<source path>: Source File Not Found`
+    - format: `ERROR: <source path>: Source File Not Found`
 
 ### X-2 (REPL)
 Add a Read Eval Print Loop.
@@ -64,14 +64,14 @@ Add a Read Eval Print Loop.
 ## Implementations
 There are several implementations of X-Forth created along with the project in varying stages of completion and extension implementation. All implementations listed implement at least X-B: 
 ### Dart
-* [phillvancejr / dart-x-forth](implementations/dart)
+* [phillvancejr / x-forth-dart](implementations/dart)
     * [X] X-B (Basic)
 ### Go
-* phillvancejr / go-x-forth TODO
+* phillvancejr / x-forth-go TODO
     * [ ] X-B (Basic)
 ### Python
-* [phillvancejr / py-x-forth](implementations/python/tutorial)
-    * [ ] X-B (Basic)
+* [phillvancejr / x-forth-py](implementations/python/tutorial)
+    * [X] X-B (Basic)
 ### Third Party
 If you create an X-Forth please let me know, I'd love to link to it! Any language is great!
 

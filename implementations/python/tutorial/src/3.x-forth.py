@@ -1,8 +1,12 @@
 '''
-In part 2 we'll introduce the stack and begin the interpreter. Yes, we're already starting the interpreter. Unlike most languages, Forth source code does not need to be parsed into an Abstract Syntax Tree (AST) and can instead be directly executed.
+In part 3 we will add some basic math operators: +, -, *, /. By the end of this lesson you'll be able to interpret basic math expressions
 '''
 # Forth source code
-src = '2 3'
+# now with addition!
+src = '2 3 +' # <1> 5.0 ok
+# uncomment these other sources to try out more complex expressions
+#src = '5 2 * 5 + 1 + 2 /' # <1> 8.0 ok
+#src = '3 4 * 10 2 / *' # <1> 60.0 ok
 
 # the ValueType object represents the datatype of a Forth value, for now we'll only have two:
 # unknown and numbers
@@ -21,6 +25,15 @@ from typing import Any
 class Value:
     type: ValueType = ValueType.Unknown
     value: Any = None
+
+# operators
+OPERATORS = [
+    # math
+    '+',
+    '-',
+    '*',
+    '/',
+]
 
 # the size of the stack
 STACK_CAPACITY = 1024
@@ -48,6 +61,7 @@ def tokenize(src):
             if token != '':
                 # add the token to the list
                 tokens.append(token)
+        
             # reset the token to an empty string
             token = ''
         else:
@@ -57,6 +71,9 @@ def tokenize(src):
             if index >= len(src)-1:
                 tokens.append(token)
     return tokens
+
+def error_stack_underflow(word):
+    raise Exception(f'ERROR: {word} : Stack underflow')
 
 # we'll use this to display what is currently on the stack
 def stack_display():
@@ -95,8 +112,52 @@ def interpret(tokens):
             stack[stack_top].type = ValueType.Number
             # assign the value
             stack[stack_top].value = number
+        # operators
+        elif token in OPERATORS:
+            
+            # all current operators require 2 arguments so we can check if the stack top is < 1
+            # if stack top is >= 1 there are 2 or more arguments on the stack
+            if stack_top < 1:
+                error_stack_underflow(token)
+            # get arguments, note that the second argument is on the top of the stack and the first is under it:
+            # push 2
+            # push 3
+            # [ 2 3 ]
+            # b = 3
+            # a = 2
+            b = stack[stack_top]
+            # decrement the stack_top to pop the value
+            stack_top -= 1
+            # decrement the stack_top to pop the value
+            a = stack[stack_top]
+            stack_top -= 1
+
+            result = None
+
+            # perform the correct operation based on the operator
+            if token == '+':
+                result = a.value + b.value
+            elif token == '-':
+                result = a.value - b.value
+            elif token == '*':
+                result = a.value * b.value
+            elif token == '/':
+                # for now if we try to divide by zero we'll just get zero
+                if b.value == 0:
+                    result = 0.0
+                else:
+                    result = a.value / b.value
+
+           # push the value back onto the stack 
+           # first increment stack_top
+            stack_top += 1
+            # assign the result to the value
+            stack[stack_top].value = result
+            # assign the number type
+            # for now the values are always numbers, but this will become important when we add more datatypes later on
+            stack[stack_top].type = ValueType.Number
         else:
-            raise Exception(f'Unknown token {token}')
+            raise Exception(f'ERROR: Unknown token {token}')
 
 if __name__ == '__main__':
     tokens = tokenize(src)

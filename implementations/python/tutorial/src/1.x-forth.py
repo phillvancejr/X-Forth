@@ -16,8 +16,10 @@ def tokenize(src):
     for index, char in enumerate(src):
         # if we get a space we want to end the last token and add it to the token list
         if char.isspace():
-            # add the token to the list
-            tokens.append(token)
+            # only add the token if it isn't empty
+            if token != '':
+                # add the token to the list
+                tokens.append(token)
             # reset the token to an empty string
             token = ''
         else:
