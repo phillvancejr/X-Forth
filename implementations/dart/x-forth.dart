@@ -46,14 +46,14 @@ final words = [
 ];
 
 enum ValueType {
-    unknown,
+    Undefined,
     number,
 }
 
 class Value {
     ValueType type; 
     dynamic value;
-    Value({this.type=ValueType.unknown,this.value=null});
+    Value({this.type=ValueType.Undefined,this.value=null});
 }
 
 error_stack_underflow(word)=> throw 'ERROR: ${word}: Stack underflow';
@@ -132,9 +132,9 @@ interpret(tokens){
             func_table[token]!();
           }
           // function
-        // unknown
+        // Undefined
         } else {
-            throw "ERROR: Unknown Token ${token}";
+            throw "ERROR: Undefined Token ${token}";
         } 
     });
 }

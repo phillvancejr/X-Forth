@@ -13,3 +13,9 @@ The file x-forth.py represents the latest tutorial completed and thus the most f
 * [5](src/5.x-forth.py) - Finish X-B by Adding some basic stack manipulation and display words
 ### X-1 (External/Variable Source Code)
 * [6](src/6.x-forth.py) - X-1 allows us to read source code from external files
+### X-2 (Symbols)
+* [7](src/7.x-forth.py) - Implement Symbols which are a building block for many other extensions
+### X-3 (Bools)
+* [8](src/8.x-forth.py) - Implement the boolean literals `True` and `False`
+### X-4 (Variables)
+* [9](src/9.x-forth.py) - Implement variables and constants to read and write from memory locations referred to by name

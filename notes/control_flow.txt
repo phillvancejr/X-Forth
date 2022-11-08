@@ -1,0 +1,59 @@
+I'm considering two different control flow methods. The first is Forth like where we keep some if stack, pushing and popping when we encounter else or end and then executing the correct branch
+
+    a 10 < if "true" . else "false" . end
+
+This is visually nice and looks good nested
+
+    a 10 < if 
+        "less" .
+    else  a 10 == if
+        "equal" .
+    else
+        "greater" .
+    end end
+
+The problem with this is that it does sort of complicate the tokenizer. You must keep some condition state and push it, then collect all tokens until you hit else or end, assign to this condition in the stack, optionally push an else state do the same and then end, then execute the appropriate branch
+
+The other option uses blocks
+
+    a 10 < [ "true" . ] [ "false" . ] if
+
+This integrates with blocks well but doesn't nest nicely
+
+    a 10 <
+        [ "less" . ]
+    [ a 10 == 
+        [ "equal" . ]
+        [ "greater" . ] if
+    ] if
+
+I could use this for a separate word called when
+    a 10 <
+        [ "less" . ]
+    [ a 10 == 
+        [ "equal" . ]
+        [ "greater" . ] when
+    ] when
+
+How does it look for loops?
+
+    10 0 do i . loop // traditional 0 to 9 Forth style loop. Note that the top value is the start and second stack value is end. i is a special value here after do
+
+with blocks
+
+    0 10 [ . ] loop
+
+I think the block version is much nicer. But also what if you want to manually increment the index, say by two?
+
+   i var 0 ! [ 10 < ] [ i @ .  i 2 += ] loop
+
+Above loop takes two blocks, the first is a condition to check every iteration and the second is the body, note the manual increment at the end of the body. Its kind of noisy, so maybe there is an easier way?
+
+   i var 0 ! [ 10 < ] [ i @ dup . ] 2 loop
+
+Now loop takes two blocks and an incrementer, not sure this is any better but maybe. Also note that we must manage the stack manually here
+
+
+
+
+

@@ -1,6 +1,8 @@
 '''
 In part 3 we will add some basic math operators: +, -, *, /. By the end of this lesson you'll be able to interpret basic math expressions
 '''
+import traceback
+
 # Forth source code
 # now with addition!
 src = '2 3 +' # <1> 5.0 ok
@@ -8,13 +10,17 @@ src = '2 3 +' # <1> 5.0 ok
 #src = '5 2 * 5 + 1 + 2 /' # <1> 8.0 ok
 #src = '3 4 * 10 2 / *' # <1> 60.0 ok
 
+# custom X Forth exception
+class XForthException(Exception):
+    pass
+
 # the ValueType object represents the datatype of a Forth value, for now we'll only have two:
-# unknown and numbers
+# Undefined and numbers
 # we'll use Python's enum class to construct it
 from enum import Enum, auto
 
 class ValueType(Enum):
-    Unknown = auto()
+    Undefined = auto()
     Number = auto()
 
 # we'll use a dataclass for the value. We could (maybe should) just use tuples, but it will be nice to have named fields
@@ -23,7 +29,7 @@ from typing import Any
 
 @dataclass
 class Value:
-    type: ValueType = ValueType.Unknown
+    type: ValueType = ValueType.Undefined
     value: Any = None
 
 # operators
@@ -73,7 +79,7 @@ def tokenize(src):
     return tokens
 
 def error_stack_underflow(word):
-    raise Exception(f'ERROR: {word} : Stack underflow')
+    raise XForthException(f'ERROR: {word} : Stack underflow')
 
 # we'll use this to display what is currently on the stack
 def stack_display():
@@ -157,7 +163,7 @@ def interpret(tokens):
             # for now the values are always numbers, but this will become important when we add more datatypes later on
             stack[stack_top].type = ValueType.Number
         else:
-            raise Exception(f'ERROR: Unknown token {token}')
+            raise XForthException(f'ERROR: Undefined token {token}')
 
 if __name__ == '__main__':
     tokens = tokenize(src)
@@ -167,5 +173,8 @@ if __name__ == '__main__':
     try:
         interpret(tokens)
         stack_display()
-    except Exception as e:
+    except XForthException as e:
         print(e)
+    except:
+        print('**DEV ERROR**') 
+        traceback.print_exc()

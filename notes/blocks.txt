@@ -1,0 +1,54 @@
+Blocks are collections of escaped tokens, similar to Lisp's ability to pass tokens around in lists
+
+[ 1 2 + ]
+
+The above is a block with 3 tokens
+
+I could use this for control flow like if
+
+1 10 < 
+[ "less" . ] # if
+[ "not less than!" . ] # else
+if # actual word whose sig is ( bool block block -- ? )
+
+They could also be used for anonymous functions
+
+10 [ 2 * ] call // 20
+[ 2 * ] [ 10 ] apply // 20
+
+They can contain any tokens, their effect is applied to the current stack. A block of numbers is similar to a list:
+
+[ 1 2 3 ] call // 1 2 3
+
+You can store an manipulate blocks
+
+my-block var [ 1 2 ] !
+
+my-block dup \+ push // note escaped word, my-block == [ 1 2 + ]
+call // 3
+
+
+Block vs Array
+
+num var 3 alloc !
+num 0 + 1 !
+num 1 + 2 !
+num 2 + 3 !
+
+nums var [ 0 0 0 ] !
+nums 0 1 put
+nums 1 2 put
+nums 2 3 put
+
+addr word
+
+addr exists to unify apis using arrays and blocks. A word that stores an array will push the pointer to the memory location of the first array value, however a word storing a block will push a pointer to a value of type block whose value is an array of values. Using addr will ensure that you retrieve the address of the first value for both blocks and arrays
+
+
+array var 3 alloc !
+block var [ 0 0 0 ] !
+
+array addr # essentially a no op since the array address and address of its first value are the same
+block addr # retrieves the address of the first value the block contains instead of the block's address
+
+users should rarely if ever use arrays and should prefer blocks. The only place arrays are required is for graphics, but for that you should use the drawing api, and maybe that should be hidden from the user so that only blocks are used. I think that is simpler. Arrays can be a separate later extension

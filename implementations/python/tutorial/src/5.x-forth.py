@@ -6,6 +6,8 @@ drop - remove the top value from the stack
 dup - duplicate the top value and push it to the stack
 show - similar to . (dot), it prints the value on the top of the stack, but it does not consume it
 '''
+import traceback
+
 # Forth source code
 src = '2 3 + .' # 5.0
 # uncomment these other sources to try out more complex programs
@@ -29,13 +31,17 @@ src = '2 3 + .' # 5.0
 # <5> 1.0 2.0 3.0 4.0 5.0 ok
 # <2> 1.0 2.0 ok
 
+# custom X Forth exception
+class XForthException(Exception):
+    pass
+
 # the ValueType object represents the datatype of a Forth value, for now we'll only have two:
-# unknown and numbers
+# Undefined and numbers
 # we'll use Python's enum class to construct it
 from enum import Enum, auto
 
 class ValueType(Enum):
-    Unknown = auto()
+    Undefined = auto()
     Number = auto()
 
 # we'll use a dataclass for the value. We could (maybe should) just use tuples, but it will be nice to have named fields
@@ -44,7 +50,7 @@ from typing import Any
 
 @dataclass
 class Value:
-    type: ValueType = ValueType.Unknown
+    type: ValueType = ValueType.Undefined
     value: Any = None
 
 # operators
@@ -124,7 +130,7 @@ def tokenize(src: str) -> List[str]:
 
 def error_stack_underflow(word: str):
     '''Stack underflow happens when there aren't enough arguments for a word'''
-    raise Exception(f'ERROR: {word} : Stack underflow')
+    raise XForthException(f'ERROR: {word} : Stack underflow')
 
 # we'll use this to display what is currently on the stack
 def stack_display():
@@ -253,13 +259,13 @@ def interpret(tokens: List[str]):
                 # boolean operators
                 # note that we want to convert the bool value to a float 1.0 or 0.0
                 elif token == '<':
-                    result = 1.0 if a.value < b.value else 0.0
+                    result = 0.0 if a.value < b.value else 1.0
                 elif token == '>':
-                    result = 1.0 if a.value > b.value else 0.0
+                    result = 0.0 if a.value > b.value else 1.0
                 elif token == '==':
-                    result = 1.0 if a.value == b.value else 0.0
+                    result = 0.0 if a.value == b.value else 1.0
                 elif token == '!=':
-                    result = 1.0 if a.value != b.value else 0.0
+                    result = 0.0 if a.value != b.value else 1.0
 
             # push the value back onto the stack 
             # first increment stack_top
@@ -274,7 +280,7 @@ def interpret(tokens: List[str]):
                 # lookup and call the function from FUNC_TABLE
                 FUNC_TABLE[token]()
         else:
-            raise Exception(f'ERROR: Unknown token {token}')
+            raise XForthException(f'ERROR: Undefined token {token}')
 
 if __name__ == '__main__':
     tokens = tokenize(src)
@@ -285,5 +291,8 @@ if __name__ == '__main__':
         interpret(tokens)
         # You can remove this line now!
         # stack_display()
-    except Exception as e:
+    except XForthException as e:
         print(e)
+    except:
+        print('**DEV ERROR**') 
+        traceback.print_exc()

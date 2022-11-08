@@ -1,16 +1,21 @@
 '''
 In part 2 we'll introduce the stack and begin the interpreter. Yes, we're already starting the interpreter. Unlike most languages, Forth source code does not need to be parsed into an Abstract Syntax Tree (AST) and can instead be directly executed.
 '''
+import traceback
 # Forth source code
 src = '2 3'
 
+# custom X Forth exception
+class XForthException(Exception):
+    pass
+
 # the ValueType object represents the datatype of a Forth value, for now we'll only have two:
-# unknown and numbers
+# Undefined and numbers
 # we'll use Python's enum class to construct it
 from enum import Enum, auto
 
 class ValueType(Enum):
-    Unknown = auto()
+    Undefined = auto()
     Number = auto()
 
 # we'll use a dataclass for the value. We could (maybe should) just use tuples, but it will be nice to have named fields
@@ -19,7 +24,7 @@ from typing import Any
 
 @dataclass
 class Value:
-    type: ValueType = ValueType.Unknown
+    type: ValueType = ValueType.Undefined
     value: Any = None
 
 # the size of the stack
@@ -96,7 +101,7 @@ def interpret(tokens):
             # assign the value
             stack[stack_top].value = number
         else:
-            raise Exception(f'Unknown token {token}')
+            raise XForthException(f'Undefined token {token}')
 
 if __name__ == '__main__':
     tokens = tokenize(src)
@@ -106,5 +111,8 @@ if __name__ == '__main__':
     try:
         interpret(tokens)
         stack_display()
-    except Exception as e:
+    except XForthException as e:
         print(e)
+    except:
+        print('**DEV ERROR**') 
+        traceback.print_exc()
