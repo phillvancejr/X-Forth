@@ -48,6 +48,20 @@ else:
     # src = 'val: con' # ERROR: con : Stack underflow
     # src = 'val: 13 con val .' # 13.0
     # src = 'n: var n @ 3 + .' # ERROR: + : Invalid Stack, expected type(s): Number for stack value at position 1 but found Undefined
+    # src = '''
+    # a: 10 var
+    # b: 5  var
+    # a @ b @ + dup .
+    # dup * .
+    # .s 
+    # 5 6 + 3 4
+    # .s 
+    # '''
+    # output
+    # 15.0
+    # 225.0
+    # <0> ok
+    # <3> 11.0 3.0 4.0 ok
 
 # custom X Forth exception
 class XForthException(Exception):

@@ -3,10 +3,14 @@
  Forth in y minutes: https://learnxinyminutes.com/docs/forth/
 -->
 # X-Forth
-X-Forth is a small Forth specification meant to be used in compiler projects. You can likely implement the basic X-forth in a couple hours or less.
+X-Forth is a small specification for a Forth like language meant to be used in compiler projects. You can likely implement the basic X-forth in a couple hours or less.
 ```py
-2 3 + .s
-# <2> 2.0 3.0 ok
+a: 10 var
+b: 5  var
+a @ b @ + . # 15.0
+dup * .     # 225.0
+drop .s     # <0> ok
+5 6 + 3 4   # <3> 11.0 3.0 4.0 ok
 ```
 ## Tutorial
 There are ongoing (WIP) tutorials that accompany the Python implementation [here](implementations/python/tutorial).
