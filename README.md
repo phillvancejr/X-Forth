@@ -69,11 +69,11 @@ X-Forth files use the `.forth` extension
 * booleans - in X-Forth booleans are numeric values where 0 is true and anything else is false. This is odd compared to C languages, but it aligns with the design ofr errors wherein an error can be represented as an enum with the first value 0 representing no error, see [X-7 (errors)](#x-7-(errors)) for more. Instead of thinking in terms of true or false, we think in terms of "did an error occur" where `0` means no error occured and any other number denotes that some error occured and which one
 
 ### X-2 (Symbols)
-Symbols are are words whose value equates to a hash value, they are similar to symbols found in Ruby. Syntactically a symbol is a word that ends with `:`, for example: `dup` is the word dup, and when this is encountered it be called immediately but, `dup:` is a symbol which instead of calling the `dup` word pushes a hash value to the stack. Symbols are important for things like variables, lookup tables and passing words around as values. Symbols can be converted to and from strings if you have implemented X-7 (String Support).
+Symbols are are words whose value equates to a hash value, they are similar to symbols found in Ruby. Syntactically a symbol is a word that ends with `:`, for example: `dup` is the word dup, and when this is encountered it be called immediately but, `dup:` is a symbol which instead of calling the `dup` word pushes a hash value to the stack. Symbols are important for things like variables, lookup tables and passing words around as values. Symbols can be converted to and from strings if you have implemented X-5 (String Support).
 #### spec
 Symbol is the type of symbols and their value should be a tuple (or equivalent) of the word as a string and its hash value. 
 #### required overloads
-* X-7 (String support)
+* X-5 (String support)
     * to-string ( symbol -- string ) - converts a symbol into a string without the `:` suffix
     * to-symbol ( string -- symbol ) - converts a string into a symbol
 #### required types
@@ -93,14 +93,14 @@ As mentioned in the X-B section, the use of `0` for true and `1` for false diffe
 * to-bool (number -- bool) - converts`0` to `True` and anything else to `False`
 * to-number ( bool -- number ) - converts `True` to `0` and `False` to `1`
 -->
-* X-7 (String support)
+* X-5 (String support)
     * to-string ( bool -- string ) - converts a bool into either `"True"` or `"False"`
 
 ### X-4 (Variables) requires X-2 (Symbols)
 Implements both variables and constants. X-Forth uses `var` and `con` for variables and constants respectively. As arguments var and con take a value and a symbol.
 ```py
-num: 10 var # write 10 into the variable num
-n2: 13 con
+num: 10 var # store 10 into the variable num
+n2: 13 con # define n2 as the constant 13
 ```
 <!--`var` has a second verson wherein you can forward declare a variable with no value and then assign to it later. -->In order to assign a value to a variable/constant use the `!` (write) word:
 ```py
@@ -117,7 +117,7 @@ Unlike variables, constants do not push their address to the stack, and instead 
 #### required words
 * Undefined - represents an undefined value, errors will occur if you try to use an undefined value. This is a built in value and must be given its own type which is also `Undefined`
 * var ( symbol any -- ) - If the top value is not a symbol, but the second value is, then the top value is assigned to the variable and the address is NOT pushed to the stack
-    <!--* ( symbol -- address) - If the top value is a symbol, then variable's value will be set to `Undefined` and the address is pushed to the stack: `num: var # address of num variable is pushed to stack`-->
+    * ( symbol -- address) - If the top value is a symbol, then variable's value will be set to `Undefined`.<!-- and the address is pushed to the stack: `num: var # address of num variable is pushed to stack` -->
 * con ( symbol any -- ) - con is exactly like the first overload of var except that its value cannot be changed and the words value rather than its address is pushed to the stack when the word is used 
 * ! ( address any -- ) - writes the value on the top of the stack to the address
 * @ ( address -- any) - reads and pushes the value at the address
@@ -148,8 +148,35 @@ VAR_START = 500
 num = memory[VAR_START + variables['num']['index']]
 ```
 -->
-### X-5 (Blocks)
-Blocks are a unique construct in X-Forth and are similar to LISP lists. Blocks are denote with square brackets `[]` and can contain any tokens: `[ 1 2 ]`, `[ 1 2 + ]`, `[ "hello" some-word ]`. Blocks are just lists of tokens which can be passed around and operated upon by words. Blocks serve as the basis for higher level constructs like custom words and control flow.
+### X-5 (String support)
+X-5 brings string support. Specifics about the string implementation like: immutability vs mutability, pascal style (length prefixed) vs c style (null terminated) are left to the implementation to decide.
+#### required words
+* length ( string -- string number ) - gives count of characters in the string.
+* append ( string string -- string ) - string concatenation
+#### required overloads
+<!--* append ( string string -- string ) - overload `+` operator to work with strings for concatenation-->
+* to-string ( number -- string ) - converts a number into a string
+    * should be implemented for each primtive datatype you included in your Forth. So if you've implemented X-3 (Bool), you should also provide a bool conversion that returns `"True"` or `"False"`
+* to-number ( string -- number ) - convert a string into a number
+#### spec
+X-Forth strings are defined using double quotes `"` which allows for the optional implementation of single char types.
+
+### X-6 (Includes) requires X-5 (String support)
+X-6 brings include support which allows including external Forth files. It works similarly to C's `include` and inserts the source code of another file at the location. `include` operates on a string path:
+```nim
+"./files/some_file.forth" include
+```
+`include` can be implemented to work at parse/compile time or during interpretation/runtime, this is implementation specific.
+#### required words
+* include (string -- ?) - extends the token stream with tokens from the passed file
+    * note that we have ? as the return value because the state of the stack depends on the file included. If that file pushed a value as the last statement then that would apply to the current program
+#### X-6.A (Pre Interpretation Include) 
+X-6.A implements `include` before the interpretation phase. During the tokenizing step when adding a word to the token list, if the token is `include` then remove the previous token from the token list, verify that it starts with `"` (double quote) and ends with `.forth"`, and if so, verify the files existence, read the file into a string and then call the tokenize function recursively to aquire the tokens from that source code, then extend/spread these tokens into the current token list.
+#### X-6.B (Mid Interpretation Include)
+X-6.B implements `include` mid interpretation. This allows for dynamic loading of libraries and code which can change based on input during runtime. To implement `include` during interpretation you could modify the token stream, and its length. When encountering `include`, pop the last string from the stack, varify it is a valid path to a `.forth` file, read its source, tokenize it, then extend the token stream with these tokens and if needed modify the loop to account for the new length, then continue interpretation on the new tokens at the included site. 
+
+### X-7 (Blocks)
+Blocks are a unique construct in X-Forth and are similar to LISP lists. Blocks are denoted with square brackets `[]` and can contain any tokens: `[ 1 2 ]`, `[ 1 2 + ]`, `[ "hello" some-word ]`. Blocks are just lists of tokens which can be passed around and operated upon by words. Blocks serve as the basis for higher level constructs like custom words and control flow.
 
 Blocks have multiple uses and provide different functionality based on the words used to operate on them:
 * lists - blocks can be used as lists of data, similar to lists in Python or JavaScript, here is a block (list) of numbers : `[ 1 2 3 ]`
@@ -161,6 +188,15 @@ Blocks have multiple uses and provide different functionality based on the words
 10 [ 5 + ] call # 15, call operates directly on the stack taking only a single block as an argument
 [ 5 + ] [ 10 ] apply # 15, apply takes a block of arguments which will be pushed to the stack first and a block of instructions 
 ```
+<!--
+Now with variables and blocks you get custo words for free by assigning blocks to constants,
+however you should consider allowing stack effect comments such as (n -- n) be part of the arguments to var and con and actually be stored somewhere, perhaps in a separate lookup table. Consider expanding the stack effect comment syntax to include multiline strings or comments
+
+    add-five: [ 5 + ] ( n -- n
+        "add-five adds five to its argument") con
+
+I could parse out the stack effect into its args and its doc comment by simply splitting on " and then on -- to get input and output. This extension can extend custom words with the stack effect and the doc/help/see words to get the info about a word
+
 ### X-6 (Custom Words) requries X-4 (Variables), X-5 (Blocks)
 #### X-6.A (Constant Custom Word)
 Implements custom words that cannot be overriden. Attempting to redefine a word that already exists will result in a `Word redefinition` error 
@@ -170,7 +206,12 @@ Implements custom words that cannot be overriden. Attempting to redefine a word 
     - format: `ERROR: <word name> : Word Redefinition`
 #### X-6.B (Redefinable Custom Words)
 Implements custom words that can be redefined. Defining a word that already exists will overwrite its entry in the global lookup table. This implementation aligns with more traditionals Forths wherein a dictionary of words is searched linearly from the end.
-
+-->
+### X-8 (If) requires X-7 (Blocks)
+### X-9 (Loop) requires X-7 (Blocks)
+TODO
+### X-10 (Word Documentation)
+X-10 brings the ability to add documentation to words with stack effect comments: `add-five: [ 5 + ] ( n -- n "adds 5 to n" ) con`. This stack comment is a special type of comment that it associated with the word and can be looked up with the words `help`, `sig`
 <!-- 0 should be true and anything else false? This would integrate well with errors. Errors could similarly be aliases where 0 represents no error and positive numbers represent specific errors like an enum. This would allow things like:
 
 : work 1 ; # something went wrong
@@ -179,50 +220,25 @@ work if drop "it worked!" . else "something went wrong, error # " swap to-string
 
 Maybe I'm over thinking it. But errors should definitely be enums. I think this makes sense actually, 0 is true and anything else is error, that way the first value of an enum/error set is always no error
 -->
-### X-7 (String support)
-X-7 brings string support. Specifics about the string implementation like: immutability vs mutability, pascal style (length prefixed) vs c style (null terminated) are left to the implementation to decide.
-#### required words
-* length ( string -- string number )- gives count of characters in the string.
-#### required overloads
-* + ( string string -- string ) - overload `+` operator to work with strings for concatenation
-* to-string ( number -- string ) - converts a number into a string
-    * should be implemented for each primtive datatype you included in your Forth. So if you've implemented X-3 (Bool), you should also provide a bool conversion that returns `"true"` or `"false"`
-* to-number ( string -- number ) - convert a string into a number
-#### spec
-X-Forth strings are defined using double quotes `"` which allows for the optional implementation of single char types.
-
-### X-8 (Includes) requires X-7 (String support)
-X-7 brings include support which allows including external Forth files. It works similarly to C's `include` and inserts the source code of another file at the location. `include` operates on a string path:
-```nim
-"./files/some_file.forth" include
-```
-`include` can be implemented to work at parse/compile time or during interpretation/runtime, this is implementation specific.
-#### required words
-* include (string -- ?) - extends the token stream with tokens from the passed file
-    * note that we have ? as the return value because the state of the stack depends on the file included. If that file pushed a value as the last statement then that would apply to the current program
-#### X-8.A (Pre Interpretation Include) 
-X-8.A implements `include` before the interpretation phase. During the tokenizing step when adding a word to the token list, if the token is `include` then remove the previous token from the token list, verify that it starts with `"` (double quote) and ends with `.forth"`, and if so, verify the files existence, read the file into a string and then call the tokenize function recursively to aquire the tokens from that source code, then extend/spread these tokens into the current token list.
-#### X-8.B (Mid Interpretation Include)
-X-8.B implements `include` mid interpretation. This allows for dynamic loading of libraries and code which can change based on input during runtime. To implement `include` during interpretation you could modify the token stream, and its length. When encountering `include`, pop the last string from the stack, varify it is a valid path to a `.forth` file, read its source, tokenize it, then extend the token stream with these tokens and if needed modify the loop to account for the new length, then continue interpretation on the new tokens at the included site. 
-### X-9 (Errors)
+### X-11 (Errors)
 TODO
-### X-10 (REPL)
+### X-12 (REPL)
 Add a Read Eval Print Loop. TODO
-### X-11 (Comments)
+### X-13 (Comments)
 X-Forth uses `#` for single line comments like Python. You can safely ignore any tokens beginning with `#`. 
-### X-12 (Event Loop) requires X-2 (Variables)
+### X-14 (Event Loop) requires X-4 (Variables)
 X-Forth uses a simple event loop in which the X-Forth interpreter runs two (or more) execution contexts (threads, coroutines or otherwise) with two (or more) interpreters, one for the main program denoted the `Main Context`, and another (or multiple) for the non bocking execution of asynchronous tasks, called the `Background Context`. The `Background Context` should have an event queue which the `Main Context` can push jobs to and which the `Background Context` will constantly poll
-### X-13 (Memory) requires X-4 (Variables)
-Memory is introduced in X-4 (Variables) to implement user defined variables, but it is also used heavily for the X-15 Graphics extension and potential others. The size of the memory (and graphics) are up to the user. The memory should be a contigous array or linked list of contiguous blocks with portions dedicated to variables (X-3), keyboard input (X-14), screen pixels (X-15), and a data section (X-16)
-### X-14 (Keyboard Input) requires X-12 (Event Loop), X-13 (Memory)
+### X-15 (Memory) requires X-4 (Variables)
+Memory is introduced in X-4 (Variables) to implement user defined variables, but it is also used heavily for the X-17 Graphics extension and potential others. The size of the memory (and graphics) are up to the user. The memory should be a contigous array or linked list of contiguous blocks with portions dedicated to variables (X-4), keyboard input (X-16), screen pixels (X-17), and a data section (X-18)
+### X-16 (Keyboard Input) requires X-14 (Event Loop), X-15 (Memory)
 Allows for Keyboard input, both block and non-blocking
-### X-15 (Graphics) requires X-14 (Keyboard Input)
-X-15 brings a simple pixel buffer based graphics API inspired by BASIC. The program memory array is used heavily for the graphics api and a portion of it is dedicated to the screen memory. The size of the screen is up to the implementation, recommended sizes are: 256x240
-### X-16 (Data section), X-13 (Memory)
+### X-17 (Graphics) requires X-16 (Keyboard Input)
+X-16 brings a simple pixel buffer based graphics API inspired by BASIC. The program memory array is used heavily for the graphics api and a portion of it is dedicated to the screen memory. The size of the screen is up to the implementation, recommended sizes are: 256x240
+### X-17 (Data section), X-14 (Memory)
 TODO
-### X-17 (With) requires X-4 (Variables)
+### X-18 (With) requires X-4 (Variables)
 With binds values on the stack to variable names temporarly for the lifetime of the top block passed to it: `10 5 [ a: b: ][ + ] with  # 15`. After execution of its block, the variables disappear and do not pollute the global scope.
-### X-18 (Builtin Words 1)
+### X-19 (Builtin Words 1)
 This extension adds more stack words that are normally seen in Forths.
 #### required words
 * over ( a b -- a b a ) - copies the second stack value to the top of the stack

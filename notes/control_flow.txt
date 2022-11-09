@@ -45,11 +45,11 @@ with blocks
 
 I think the block version is much nicer. But also what if you want to manually increment the index, say by two?
 
-   i var 0 ! [ 10 < ] [ i @ .  i 2 += ] loop
+   i: 0 var [ i 10 < ] [ i 2 += ][ i @ . ] loop
 
 Above loop takes two blocks, the first is a condition to check every iteration and the second is the body, note the manual increment at the end of the body. Its kind of noisy, so maybe there is an easier way?
 
-   i var 0 ! [ 10 < ] [ i @ dup . ] 2 loop
+   i: 0 var i [ 10 < ] [ i @ dup . ] 2 loop
 
 Now loop takes two blocks and an incrementer, not sure this is any better but maybe. Also note that we must manage the stack manually here
 
