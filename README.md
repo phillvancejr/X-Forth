@@ -5,6 +5,11 @@
 # X-Forth
 X-Forth is a small specification for a Forth like language meant to be used in compiler projects. You can likely implement the basic X-forth in a couple hours or less.
 ```py
+2 3 + .s
+# <2> 2.0 3.0 ok
+```
+A more complex program:
+```py
 a: 10 var
 b: 5  var
 a @ b @ + . # 15.0
