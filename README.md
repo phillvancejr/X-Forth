@@ -64,7 +64,7 @@ The most basic version of X-Forth. It contains only a few operators and function
 ### X-1 (External/Variable Source Code)
 Acquire the source code from an external file. Receive an external file path on the command line, validate its existence and read its contents into a source string variable. 
 
-X-Forth files use the `.forth` extension
+X-Forth files use the `.xf` extension
 
 #### errors
 - Source file not found - The passed file path could not be found
@@ -94,10 +94,10 @@ As mentioned in the X-B section, the use of `0` for true and `1` for false diffe
 * True `True: 0 con` - constant == `0`
 * False `False: 1 con` - constant == `1`
 #### required overloads
-<!-- TODO
 * to-bool (number -- bool) - converts`0` to `True` and anything else to `False`
+    * to-bool (bool -- bool) - no op 
 * to-number ( bool -- number ) - converts `True` to `0` and `False` to `1`
--->
+    * to-number ( number -- number ) - no op
 * X-5 (String support)
     * to-string ( bool -- string ) - converts a bool into either `"True"` or `"False"`
 
@@ -156,29 +156,31 @@ num = memory[VAR_START + variables['num']['index']]
 ### X-5 (String support)
 X-5 brings string support. Specifics about the string implementation like: immutability vs mutability, pascal style (length prefixed) vs c style (null terminated) are left to the implementation to decide.
 #### required words
-* length ( string -- string number ) - gives count of characters in the string.
+* length ( string -- number ) - gives count of characters in the string.
 * append ( string string -- string ) - string concatenation
 #### required overloads
 <!--* append ( string string -- string ) - overload `+` operator to work with strings for concatenation-->
 * to-string ( number -- string ) - converts a number into a string
     * should be implemented for each primtive datatype you included in your Forth. So if you've implemented X-3 (Bool), you should also provide a bool conversion that returns `"True"` or `"False"`
+* X-2 (Symbols)
+    * symbol-from-string ( string -- symbol ) - convert a string into its symbol representation. Any string can be converted into a symbol even if the string does not end with ':'. So both `"Pig"` and `"Pig:"` convert to the symbol `Pig:`
+<!--
+These require error handling support because what do you do if the conversion was not successful?
 * to-number ( string -- number ) - convert a string into a number
+* to-bool ( string -- bool ) - convert a string into a bool
+-->
 #### spec
 X-Forth strings are defined using double quotes `"` which allows for the optional implementation of single char types.
 
 ### X-6 (Includes) requires X-5 (String support)
 X-6 brings include support which allows including external Forth files. It works similarly to C's `include` and inserts the source code of another file at the location. `include` operates on a string path:
 ```nim
-"./files/some_file.forth" include
+"./files/some_file.xf" include
 ```
-`include` can be implemented to work at parse/compile time or during interpretation/runtime, this is implementation specific.
+`include` should by some means cache the file it includes so a file is only ever included once. Though it looks like a normal x-forth word it is more like a compiler command and should be executed (and removed from the token stream) before interpretation.
 #### required words
 * include (string -- ?) - extends the token stream with tokens from the passed file
     * note that we have ? as the return value because the state of the stack depends on the file included. If that file pushed a value as the last statement then that would apply to the current program
-#### X-6.A (Pre Interpretation Include) 
-X-6.A implements `include` before the interpretation phase. During the tokenizing step when adding a word to the token list, if the token is `include` then remove the previous token from the token list, verify that it starts with `"` (double quote) and ends with `.forth"`, and if so, verify the files existence, read the file into a string and then call the tokenize function recursively to aquire the tokens from that source code, then extend/spread these tokens into the current token list.
-#### X-6.B (Mid Interpretation Include)
-X-6.B implements `include` mid interpretation. This allows for dynamic loading of libraries and code which can change based on input during runtime. To implement `include` during interpretation you could modify the token stream, and its length. When encountering `include`, pop the last string from the stack, varify it is a valid path to a `.forth` file, read its source, tokenize it, then extend the token stream with these tokens and if needed modify the loop to account for the new length, then continue interpretation on the new tokens at the included site. 
 
 ### X-7 (Blocks)
 Blocks are a unique construct in X-Forth and are similar to LISP lists. Blocks are denoted with square brackets `[]` and can contain any tokens: `[ 1 2 ]`, `[ 1 2 + ]`, `[ "hello" some-word ]`. Blocks are just lists of tokens which can be passed around and operated upon by words. Blocks serve as the basis for higher level constructs like custom words and control flow.
@@ -193,6 +195,17 @@ Blocks have multiple uses and provide different functionality based on the words
 10 [ 5 + ] call # 15, call operates directly on the stack taking only a single block as an argument
 [ 5 + ] [ 10 ] apply # 15, apply takes a block of arguments which will be pushed to the stack first and a block of instructions 
 ```
+* named functions - If you define a block variable with `con` then the use of the constant name calls that block immediately:
+```py
+add-five: [ + 5 ] con
+10 add-five . # 15.0
+```
+Block variables act slightly differently depending on whether they are defined with `var` or `con`. If defined with `var` a variable holding a block just pushes the block to the stack like any other value, however if the block was defined with `con`, then in addition to pushing the block to the stack it is immediately called which is what allows user defined words to work. If you use a block which is a `var`, then you will need to also use `call` or `apply` to execute the block. 
+#### required types
+* Block
+#### required words
+* call ( block-body -- ? ) - executes the tokens inside the passed block, applying its effect to the stack: `2 [ 3 + ] call # 5.0`
+* apply ( block-body block-args -- ?) - the same as call, except instead of getting its args directly from the stack, its top value is a block containing arguments that are pushed to the stack before the body is called: `[ 3 + ] [ 2 ] apply # 5.0`
 <!--
 Now with variables and blocks you get custo words for free by assigning blocks to constants,
 however you should consider allowing stack effect comments such as (n -- n) be part of the arguments to var and con and actually be stored somewhere, perhaps in a separate lookup table. Consider expanding the stack effect comment syntax to include multiline strings or comments
@@ -311,6 +324,8 @@ There are several implementations of X-Forth created along with the project in v
     * [X] X-2 (Symbols)
     * [X] X-3 (Bools)
     * [X] X-4 (Variables)
+    * [X] X-5 (Strings)
+    * [X] X-6 (Includes)
 ### Third Party
 If you create an X-Forth please let me know, I'd love to link to it! Any language is great!
 

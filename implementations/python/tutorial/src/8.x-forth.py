@@ -1,5 +1,11 @@
 '''
 Part 8 will be short and simple since we've introduced a lot of the foundation for additional types. In X-Forth, 0.0 is treated as truthy or no error and 1.0 is treated as falsey or some error. This is odd compared to C but it does help to think in terms of errors rather than true or false: 0.0 means no error ocurred and 1.0 (or any other number) denotes that an error occured and which one. The values True and False are used to represent these values when printing or when used as literals
+
+We will implement the following words:
+* to-bool (number -- bool) - converts`0` to `True` and anything else to `False`
+    * to-bool (bool -- bool) - no op 
+* to-number ( bool -- number ) - converts `True` to `0` and `False` to `1`
+    * to-number ( number -- number ) - no op
 '''
 import traceback
 import sys
@@ -9,7 +15,7 @@ import os.path
 if len(args := sys.argv[1:]) > 0:
     # get the argument
     filename = args[0]
-    if filename.endswith('.forth'):
+    if filename.endswith('.xf'):
         if os.path.isfile(filename):
             with open(filename, 'r') as f:
                 src = f.read()
@@ -36,6 +42,7 @@ else:
     # # output
     # # False
     # # <0> ok
+    src = 'False to-number .'
 
 # custom X Forth exception
 class XForthException(Exception):
@@ -99,8 +106,10 @@ FUNC_TABLE = {
     'dup':  lambda: stack_dup(),
     # note that we wrap the call to stack_print in a lambda so we can pass false for the consume argument
     'show': lambda: stack_print(consume=False),
-    # new word type to get the type of the value on the stack
-    'type': lambda: stack_get_type()
+    'type': lambda: stack_get_type(),
+    # first conversion words
+    'to-bool': lambda: to_bool(),
+    'to-number': lambda: to_number(),
 }
 
 # we'll also combine the operators and function like words into a single list for easy lookup
@@ -201,7 +210,7 @@ def stack_invalid_types(type_list: List[ValueType], raise_exception: bool = True
         if value.type != valid_type and valid_type != ValueType.Any:
             if raise_exception:
                 # this calculates the index such that the top stack value is 0, the next is 1, etc
-                index = value_count - type_i
+                index  = type_i
                 error_stack_invalid_types([valid_type], value.type, index, word)
                 # raise XForthException(f'{location}ERROR: Invalid Stack, expected type(s): {valid_type} for stack value at index {i} but found {value.type.name}')
             return (valid_type, value.type, i)
@@ -430,6 +439,53 @@ def interpret(tokens: List[str]):
 
         else:
             raise XForthException(f'{location}ERROR: Undefined token {token}')
+
+# bool conversion
+def to_bool():
+    # require 1 argument
+    if stack_top < 0:
+        error_stack_underflow('to-bool')
+
+    # if the top value is a number do nothing
+    if stack[stack_top].type == ValueType.Bool:
+        return
+    # for now we'll only implement number -> bool
+    number_to_bool = stack_invalid_types([ValueType.Number], raise_exception=False, word='to-bool')
+
+    if number_to_bool == ():
+        # get value
+        value = stack[stack_top]
+        # don't modify stack top since we'll push back after popping 
+        stack[stack_top].type = ValueType.Bool
+        stack[stack_top].value = 0.0 if value.value == 0 else 1.0
+    # invalid types
+    else:
+        _, found, index = number_to_bool
+        error_stack_invalid_types([ValueType.Bool, ValueType.Number], found, index, word='to-bool')
+
+# val to number conversion
+def to_number():
+    # require 1 argument
+    if stack_top < 0:
+        error_stack_underflow('to-number')
+
+    # if the top value is a number do nothing
+    if stack[stack_top].type == ValueType.Number:
+        return
+    # for now we'll only implement and bool -> number
+    bool_to_number = stack_invalid_types([ValueType.Bool], raise_exception=False, word='to-number')
+
+    if bool_to_number == ():
+        # get value
+        value = stack[stack_top]
+        # don't modify stack top since we'll push back after popping 
+        stack[stack_top].type = ValueType.Number
+        stack[stack_top].value = value.value 
+    # invalid types
+    else:
+        _, found, index = bool_to_number
+        error_stack_invalid_types([ValueType.Number, ValueType.Bool], found, index, word='to-number')
+
 
 if __name__ == '__main__':
     tokens = tokenize(src)

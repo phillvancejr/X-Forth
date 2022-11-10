@@ -1,22 +1,13 @@
 '''
-Part 9 brings variables and constants which allow us to refer to memory by a convenient name. In this tutorial the implementation will be excessively simple, just using a lookup table of variables. The basic is first that we can pass a symbol and value to the words 'var' or 'con' and they will define a variable or constant for us. Constants are just like variables but can't change once assigned and they must be given a value when created. Variables have a second form allowing you to omit the initial value at which point it will be defined with the value 'Undefined'. If you try to use an Undefined value you will get errors. Here is the syntax we'll implement
+Part 15 is quite short but really cool as we'll be implementing includes! We'll be able to include x-forth .xf files similar to C. We'll implement a single word 
 
-    num: 10 var # variable num defined and assigned 10
-    my-constant: 3 con # my-constant cannot change now
+include (compile-time-string -- ?) - includes the x-forth file at the given path only once
 
-    another-number: var # forward declaration, another-number has the value 'Undefined'
-    another-number # use of the variable name pushes its address to the stack
-    35 ! Here we use the ! (write) operator to write a value to the variable
-
-Note that unlike variables, use of constants do not push their address to the stack and instead push their values directly
-
-We will also be implementing Address and Undefined types
-
-In Part 10 we'll implement ! and @ to read and write variables as well
+include is more like a keyword than a normal word because it is actually executed between tokenization and interpretation. Its string argument must be known at compile time
 '''
 import traceback
 import sys
-import os.path
+import os
 
 # if an argument was passed to the file
 if len(args := sys.argv[1:]) > 0:
@@ -37,22 +28,20 @@ else:
     # if we're using internal source use an empty location
     location = ''
     # Forth source code
-    src = 'num: .s var .s' 
-    #  output
-    # <1> num: ok
-    # <0> ok
-    # uncomment below for some extra programs
-    # src = 'num: var num type .' # Address:
-    # src = 'num: 10 con num dup type .s' # <2> 10.0 Number: ok
-    # src = 'val: con' # ERROR: con : Stack underflow
-    # src = 'val: 13 con val .' # 13.0
-    # src = 'something: var something .'
-    # src = 'Undefined .'
-    # # using the Symbol Address:
-    # src = 'Address: .' # Address:
-    # # attempting to use the word Address
-    # src = 'Address .' # ERROR: Undefined token Address, did you mean the Symbol Address: ? If so you forgot the ending ":" (colon)
-    # src = 'Address: 13 con' # ERROR: Constant Redefinition, you cannot redeclare constant Address
+    src = '"./include_me.xf" include a b + .'
+    # output
+    # this is just debug stuff, not actually part of normal x-forth output
+    # EXPANDING INCLUDE ./include_me.xf...
+    # EXPANDING TOKENS FOR /Volumes/Phill_Backup/pers/programming/x-forth/implementations/python/tutorial/src/include_me.xf
+    # EXPANDING INCLUDE include_another.xf...
+    # EXPANDING TOKENS FOR /Volumes/Phill_Backup/pers/programming/x-forth/implementations/python/tutorial/src/include_another.xf
+    # EXPANDING INCLUDE include_another.xf...
+    # EXPANDING INCLUDE ../src/include_another.xf...
+
+    # 15.0
+
+
+
 
 # custom X Forth exception
 class XForthException(Exception):
@@ -69,10 +58,10 @@ class ValueType(Enum):
     Symbol = auto()
     # This type is for internal use, allowing us to check against any value type
     Any = auto()
-    # add a bool type
     Bool = auto()
-    # An Address is similar to a pointer
     Address = auto()
+    # our new string type
+    String = auto()
 
 # we'll use a dataclass for the value. We could (maybe should) just use tuples, but it will be nice to have named fields
 from dataclasses import dataclass
@@ -134,6 +123,11 @@ FUNC_TABLE = {
     'type': lambda: stack_get_type(),
     'to-bool': lambda: to_bool(),
     'to-number': lambda: to_number(),
+    # let's prefix our builtins with builtin_
+    'length': lambda: builtin_length(),
+    'append': lambda: builtin_append(),
+    'to-string': lambda: builtin_to_string(),
+    'symbol-from-string': lambda: builtin_symbol_from_string(),
 }
 
 # we'll also combine the operators and function like words into a single list for easy lookup
@@ -145,11 +139,12 @@ WORDS = [
 
 # These are words and symbols which cannot be redefined
 RESERVED_WORDS = [
-    *OPERATORS,
-    *FUNC_TABLE.keys(),
+    *[ o + ':' for o in OPERATORS],
+    *[ f + ':' for f in FUNC_TABLE.keys()],
     *[ t.name + ':' for t in ValueType ],
     'True:',
-    'False:'
+    'False:',
+    'include:',
 ]
 
 
@@ -167,6 +162,9 @@ stack_top = -1
 # a place to store variables
 # its a map of variable name symbol hashes to their Value
 variables = dict()
+
+# here we'll cache paths so we don't include them more than once
+included_paths = []
 
 # let's create a global table of symbols to avoid recreating them over and over
 # it will be a table of hashes to symbol words so we can easily look up the word based on its hash
@@ -191,7 +189,8 @@ def pretty_vars():
     # note that we don't print builtins
     pprint({symbols[k][:-1]: v for k,v in variables.items() if not v.builtin}, width=1)
 
-def tokenize(src: str) -> List[str]:
+# we're adding a location to the tokenize function
+def tokenize(src: str, location: str) -> List[str]:
     '''tokenize breaks up a source string into a series of tokens, represented as a list of strings'''
     # remove leading and trailing whitespace
     src = src.strip()
@@ -201,7 +200,12 @@ def tokenize(src: str) -> List[str]:
     # we will use this to build up tokens comprised of more than one char
     token = ''
 
-    for index, char in enumerate(src):
+    # first we'll change this to a while loop in order to gain more control over the loop
+    index = 0
+    while index < len(src):
+    # for index, char in enumerate(src):
+        # here we'll manually get the char
+        char = src[index]
         # if we get a space we want to end the last token and add it to the token list
         if char.isspace():
             # only add the token if it isn't empty
@@ -210,12 +214,56 @@ def tokenize(src: str) -> List[str]:
                 tokens.append(token)
             # reset the token to an empty string
             token = ''
+        # x-forth strings begin with " (double quote)
+        elif char == '"':
+            # here we'll add the token if it is not empty
+            # this allows things like 10"hello" to be parsed correctly
+            if token != '':
+                tokens.append(token)
+                token = ''
+            # string tokens start with "
+            token += '"' 
+            # move passed the first "
+            index += 1
+            # get the next char
+            c = src[index]
+            # get everything until we find another "
+            # Let's modify this while loop slightly
+            # while c != '"':
+            while True:
+                # # if the last char wasn't a backspace and the current char is a " we should end the string
+                if c == '"' and token[-1] != '\\':
+                    break
+                # we need to check if we reach the end of the file before finishing the string
+                if index >= len(src) -1:
+                    raise XForthException(f'{location}ERROR: Unterminated String, expected " to end string {token} but found end of file')
+
+                # add the char to the token
+                token += c
+                # incrememnt the index
+                index += 1
+                # get the next char
+                c = src[index]
+            # add the ending "
+            token += '"'
+
+            # we need to replace escaped characters with their real versions
+            token = token.replace('\\n', '\n') # newline
+            token = token.replace('\\r', '\r') # carriage return
+            token = token.replace('\\t', '\t') # tab
+            token = token.replace('\\"', '"')  # double quote
+
+            tokens.append(token)
+            # reset the token
+            token = ''
         else:
             # append the character to the token string
             token += char
             # if we are at the end of the src we should add the token to the list
             if index >= len(src)-1:
                 tokens.append(token)
+        # now we need to manually increment the index
+        index += 1
     return tokens
 
 def error_stack_underflow(word: str):
@@ -318,6 +366,15 @@ def stack_display():
             value = stack[i]
             # get the printable value
             printed_value = get_printed_value(value)
+            # for strings we want to include quotes for display
+            if value.type == ValueType.String:
+                # to display we don't want to actually print newlines instead want to escape them
+                printed_value = printed_value.replace('\n', '\\n')
+                printed_value = printed_value.replace('\r', '\\r') # also do carriage return for good measure
+                printed_value = printed_value.replace('"', '\\"') # also we want quotes to be escaped
+                # we want to display the string with leading and trailing quotes
+                printed_value = '"' + printed_value + '"'
+                # append the string token
             print(f'{printed_value} ', end='')
 
     # Forth ends its stack display with ok, let's do this
@@ -370,7 +427,115 @@ def stack_print(consume: bool = True):
 
     # print the value
     printed_value = get_printed_value(val)
+
     print(printed_value)
+
+# TODO need to create a lookup table to cache absolute paths to avoid reimporting them in circular includes
+# TODO make this function recursive
+def builtin_expand_includes(tokens: List[str], show_info=False) -> List[str]:
+    '''builtin_expand_includes includes external x-forth files.'''
+
+    # we'll push the tokens to this list
+    final_tokens = []
+
+    # we need the index
+    for i, token in enumerate(tokens):
+        if token == 'include' and i > 0:
+            if i < 1:
+                raise XForthException(f'{location}ERROR: include : Expected literal string argument but found none')
+            # get last token
+            last_token = tokens[i-1]
+            # check if it is a string
+            if last_token.startswith('"') and last_token.endswith('"'):
+                # have we included this path before?
+                # default true
+                path_included = True
+                # exclude the quotes from the path
+                xf_path = last_token[1:-1]
+                # some info to show how often include is called
+                if show_info:
+                    # there should be a green version of this for each include
+                    print(f'\x1b[92mEXPANDING INCLUDE {xf_path}...\x1b[0m')
+                # if it is a .xf path
+                if xf_path.endswith('.xf'):
+                    if os.path.isfile(xf_path):
+                        # convert to an absolute path
+                        xf_path = os.path.abspath(xf_path)
+                        if not xf_path in included_paths:
+                            # info to show how often include actually reads and expands files
+                            if show_info:
+                                # there should be one yellow version for each file, even if multiple differing relative paths are used
+                                # and even when it is included multiple times
+                                print(f'\x1b[93mEXPANDING TOKENS FOR {xf_path}\x1b[0m')
+                            # set path included to false
+                            path_included = False
+                            # open file and read source
+                            with open(xf_path, 'r') as xf_file:
+                                new_source = xf_file.read()
+                    else:
+                        raise XForthException(f'ERROR: {xf_path}: Source File Not Found')
+                else:
+                    raise XForthException(f'{location}ERROR: include : path {xf_path} is not a .xf file')
+
+                # remove string path from final_tokens
+                final_tokens.pop()
+                
+                # if we haven't included that path before
+                if not path_included:
+                    # cache path so we don't include more than once
+                    included_paths.append(xf_path)
+                    # get the tokens from the new_source
+                    new_tokens = tokenize(new_source, xf_path)
+                    # recursively expand includes
+                    new_tokens = builtin_expand_includes(new_tokens, show_info)
+                    # add the tokens to the final tokens
+                    final_tokens.extend(new_tokens)
+
+            # did not find expected string
+            else:
+                raise XForthException(f'{location}ERROR: include : Expected literal string argument but found token {last_token}')
+
+        # append other tokens to final_tokens
+        else:
+            final_tokens.append(token)
+
+
+    return final_tokens
+
+# TODO load
+# this needs to be above interpret because the interpreter needs to call it
+# def builtin_load(tokens: List[str], once=True):
+#     '''builtin_expand_includes includes external x-forth files.'''
+#     global stack_top 
+
+#     word = 'include' if once else 'load'
+#     if stack_top < 0:
+#         error_stack_underflow(word)
+
+#     stack_invalid_types([ValueType.String], word=word)
+
+#     # get value
+#     v = stack[stack_top]
+#     stack_top -= 1
+
+#     # get path from the value
+#     xf_path = v.value
+
+#     if xf_path.endswith('.xf'):
+#         if os.path.isfile(xf_path):
+#             # convert to an absolute path
+#             xf_path = os.path.abspath(xf_path)
+#             with open(xf_path, 'r') as xf_file:
+#                 new_source = xf_file.read()
+#         else:
+#             raise XForthException(f'ERROR: {xf_path}: Source File Not Found')
+#     else:
+#         raise XForthException(f'{location}ERROR: {word} : path {xf_path} is not a .xf file')
+
+#     print(f'*** INCLUDE SOURCE {xf_path} ***')
+#     print(new_source)
+
+
 
 # helper to check if a string is a number
 def is_number(src: str) -> bool:
@@ -572,6 +737,53 @@ def interpret(tokens: List[str]):
             stack[stack_top].type = ValueType.Undefined
             # assign the value UNDEFINED
             stack[stack_top].value = UNDEFINED
+         # read
+        elif token == '!':
+            # ! requires two arguments
+            if stack_top < 1:
+                error_stack_underflow('!')
+            
+            stack_invalid_types([ValueType.Any, ValueType.Address], word=token)
+
+            # get value
+            value = stack[stack_top]
+            stack_top -= 1
+
+            # get address
+            addr = stack[stack_top]
+            stack_top -= 1
+
+            # write the type and value
+            variables[addr.value].type = value.type
+            variables[addr.value].value = value.value
+
+        # # write
+        elif token == '@':
+            # ! requires one argument
+            if stack_top < 0:
+                error_stack_underflow('@')
+            
+            stack_invalid_types([ValueType.Address], word=token)
+
+            # get address
+            addr = stack[stack_top]
+            # don't modify stack top since we'll be pushing again anyway
+            # stack_top -= 1
+            # stack_top += 1
+            # get value
+            value = variables[addr.value]
+
+            # write the type and value to the stack
+            stack[stack_top].type = value.type
+            stack[stack_top].value = value.value
+        # strings
+        elif token.startswith('"') and token.endswith('"'):
+            # increment stack top
+            stack_top += 1 
+            # set the type to string
+            stack[stack_top].type = ValueType.String
+            # assign the string without its leading and trailing "
+            stack[stack_top].value = token[1:-1]
         # unkown token
         else:
             # suggest what the dev might have meant
@@ -583,6 +795,7 @@ def interpret(tokens: List[str]):
 
 # bool conversion
 def to_bool():
+    '''to_bool converts numbers to bools, if the type value is a bool it does nothing'''
     # require 1 argument
     if stack_top < 0:
         error_stack_underflow('to-bool')
@@ -606,6 +819,7 @@ def to_bool():
 
 # val to number conversion
 def to_number():
+    '''to_number converts values to numbers, if the top value is a number it does nothing'''
     # require 1 argument
     if stack_top < 0:
         error_stack_underflow('to-number')
@@ -627,13 +841,139 @@ def to_number():
         _, found, index = bool_to_number
         error_stack_invalid_types([ValueType.Number, ValueType.Bool], found, index, word='to-number')
 
-if __name__ == '__main__':
-    tokens = tokenize(src)
-    print(f'** TOKENS **\n{tokens}')
+def builtin_length():
+    '''builtin_length pushes the length of the top value on the stack which must be a string'''
+    # require 1 argument
+    if stack_top < 0:
+        error_stack_underflow('length')
 
-    print(f'\n** INTERPRET **')
+    # for now we'll only implement length for strings, but in a later lesson we'll be creating an overload for it
+    string_length = stack_invalid_types([ValueType.String], raise_exception=False, word='length')
+
+    if string_length == ():
+        # get value
+        value = stack[stack_top]
+        # don't modify stack top since we'll push back after popping 
+        stack[stack_top].type = ValueType.Number
+        # push the length of the string as a float
+        # note that we need to account for the unescaped string
+        stack[stack_top].value = float(len(value.value))
+    # invalid types
+    else:
+        _, found, index = string_length
+        error_stack_invalid_types([ValueType.String], found, index, word='length')
+
+def builtin_append():
+    '''builtin_length concatenates values and pushes the new value to the stack'''
+    global stack_top
+    # require 2 arguments
+    if stack_top < 1:
+        error_stack_underflow('append')
+
+    # for now we'll only implement append for strings, but in a later lesson we'll be creating an overload for it
+    string_append = stack_invalid_types([ValueType.String, ValueType.String], raise_exception=False, word='append')
+
+    if string_append == ():
+        # get values
+        b = stack[stack_top]
+        stack_top -= 1
+
+        a = stack[stack_top]
+        # don't modify stack top since we'll push back after popping 
+        # create the appended string
+        new_string = a.value + b.value
+        # push the appended string
+        stack[stack_top].value = new_string
+    # invalid types
+    else:
+        _, found, index = string_append
+        error_stack_invalid_types([ValueType.String], found, index, word='append')
+
+
+def builtin_to_string():
+    '''builtin_to_string converts numbers and bools to strings'''
+    if stack_top < 0:
+        error_stack_underflow('to-string')
+
+    # if the top value is a string do nothing
+    if stack[stack_top].type == ValueType.String:
+        return
+
+    # number -> string and bool -> string
+    number_to_string = stack_invalid_types([ValueType.Number], raise_exception=False, word='to-string')
+    bool_to_string = stack_invalid_types([ValueType.Bool], raise_exception=False, word='to-string')
+    symbol_to_string = stack_invalid_types([ValueType.Symbol], raise_exception=False, word='to-string')
+
+    if bool_to_string == () or number_to_string == () or symbol_to_string == ():
+        # get value
+        value = stack[stack_top]
+        # don't modify stack top since we'll push back after popping 
+        string_value = UNDEFINED
+        # number
+        if value.type == ValueType.Number:
+            string_value = str(value.value)
+        elif value.type == ValueType.Symbol:
+            string_value = symbols[value.value][:-1]
+        # bool
+        else:
+            string_value = 'True' if value.value == TRUE else 'False'
+
+        # set the type and value
+        stack[stack_top].type = ValueType.String
+        stack[stack_top].value = string_value
+    # invalid types
+    else:
+        _, found, index = bool_to_string
+        error_stack_invalid_types([ValueType.Number, ValueType.Bool], found, index, word='to-string')
+
+def builtin_symbol_from_string():
+    '''builtin_symbol_from_string converts a string into its symbol representation. Any string can be converted into a symbol even if the string does not end with ':'. So both `"Pig"` and `"Pig:"` convert to the symbol `Pig:`s'''
+    # require 1 argument
+    word = 'symbol-from-string'
+    if stack_top < 0:
+        error_stack_underflow(word)
+
+    stack_invalid_types([ValueType.String], word=word)
+
+    # get value
+    v = stack[stack_top]
+    # don't modify stack top since we'll push back after popping 
+    # set the new value's type to symbol
+    stack[stack_top].type = ValueType.Symbol
+    # get the string from the value
+    string = v.value
+    # add the traling : if it does not exist
+    if not string.endswith(':'):
+        string = string + ':'
+
+    # get the hash value
+    hash_value = hash(string)
+    # assign the new symbol to the symbols table
+    symbols[hash_value] = string
+    # push the symbol
+    stack[stack_top].value = hash_value
+
+
+if __name__ == '__main__':
+    # now since tokenize can through an error we need to also put it in the try block
     try:
-        interpret(tokens)
+        tokens = tokenize(src, location)
+        print(f'** TOKENS **\n{tokens}')
+
+        # this version shows debug printing to show that a file is only ever included once 
+        expanded = builtin_expand_includes(tokens, show_info=True)
+        # using this version we expect to see 4 green includes but only 2 yellows
+        # include appeared 4 times,  the file include_another.xf  was passed to include 3 times only actually included once
+        # we'll use this version later on without the debug info shown
+        #expanded = builtin_expand_includes(tokens)
+
+        print(f'** INCLUDE EXPANDED TOKENS **\n{expanded}')
+
+
+        print(f'\n** INTERPRET **')
+        # pass the expanded tokens now
+        interpret(expanded)
+        # removing pretty_vars for now
         pretty_vars()
     except XForthException as e:
         print(e)

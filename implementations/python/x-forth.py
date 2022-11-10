@@ -1,7 +1,7 @@
 '''
 Part 6 will be short, we'll add the ability to get our source code from an external file:
 
-python3 6.x-forth.py ../../forth_samples/x-b/3.forth 
+python3 6.x-forth.py ../../forth_samples/x-b/3.xf 
 '''
 import sys
 import os.path
@@ -10,7 +10,7 @@ import os.path
 if len(args := sys.argv[1:]) > 0:
     # get the argument
     filename = args[0]
-    if filename.endswith('.forth'):
+    if filename.endswith('.xf'):
         if os.path.isfile(filename):
             with open(filename, 'r') as f:
                 src = f.read()
