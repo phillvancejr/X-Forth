@@ -19,6 +19,7 @@ The file x-forth.py represents the latest tutorial completed and thus the most f
 * [8](src/8.x-forth.py) - Implement the boolean literals `True` and `False`
 ### X-4 (Variables)
 * [9](src/9.x-forth.py) - Implement variables and constants to read and write from memory locations referred to by name
+<!--Consider breaking 9 up into smaller lessons, it is quite a big change-->
 * [10](src/10.x-forth.py) - Implement `!` and `@` to read and write
 ### X-5 (String Support)
 * [11](src/11.x-forth.py) - Beginning string support. First we'll modify the tokenizer to tokenize strings as a single token
