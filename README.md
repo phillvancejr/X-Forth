@@ -226,6 +226,7 @@ Implements custom words that cannot be overriden. Attempting to redefine a word 
 Implements custom words that can be redefined. Defining a word that already exists will overwrite its entry in the global lookup table. This implementation aligns with more traditionals Forths wherein a dictionary of words is searched linearly from the end.
 -->
 ### X-8 (If) requires X-7 (Blocks)
+TODO
 ### X-9 (Loop) requires X-7 (Blocks)
 TODO
 ### X-10 (Word Documentation)
